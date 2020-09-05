@@ -14,21 +14,7 @@ func main() {
 	mux.HandleFunc("/", hello)
 	
 	fmt.Println("Listening on Port 3000")
-	log.Fatal(http.ListenAndServe(":3000", watch.WatchMw(mux)))
-}
-
-func recoverMiddleware(app http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			r := recover()
-			if r != nil {
-				log.Println(r)
-				http.Error(w, "Something went wrong!", http.StatusInternalServerError)
-			}
-		}()
-
-		app.ServeHTTP(w, r)
-	}
+	log.Fatal(http.ListenAndServe(":3000", watch.WatchMw(mux, true)))
 }
 
 func panicDemo(w http.ResponseWriter, r *http.Request) {
