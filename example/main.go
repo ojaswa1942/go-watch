@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	watch "github.com/ojaswa1942/go-watch"
 	"log"
 	"net/http"
-	".."
 )
 
 func main() {
@@ -12,7 +12,7 @@ func main() {
 	mux.HandleFunc("/panic/", panicDemo)
 	mux.HandleFunc("/panic-after/", panicAfterDemo)
 	mux.HandleFunc("/", hello)
-	
+
 	fmt.Println("Listening on Port 3000")
 	log.Fatal(http.ListenAndServe(":3000", watch.WatchMw(mux, true)))
 }
