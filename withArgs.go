@@ -1,0 +1,53 @@
+package watch
+
+import (
+	"net/smtp"
+)
+
+type WatchHandlerOption func(wh *watchHandler)
+
+type watchHandler struct {
+	dev, sendEmail bool
+	emailDetails   EmailDetails
+	debugPath      string
+}
+
+type EmailDetails struct {
+	Addr string
+	A    smtp.Auth
+	From string
+	To   []string
+}
+
+func newWatchHandler(opts []WatchHandlerOption) watchHandler {
+	wh := watchHandler{
+		dev:       true,
+		sendEmail: false,
+		debugPath: "/watch/debug",
+	}
+
+	for _, opt := range opts {
+		opt(&wh)
+	}
+
+	return wh
+}
+
+func WithDevelopment(dev bool) WatchHandlerOption {
+	return func(wh *watchHandler) {
+		wh.dev = true
+	}
+}
+
+func WithEmail(details EmailDetails) WatchHandlerOption {
+	return func(wh *watchHandler) {
+		wh.sendEmail = true
+		wh.emailDetails = details
+	}
+}
+
+func WithDebugPath(path string) WatchHandlerOption {
+	return func(wh *watchHandler) {
+		wh.debugPath = path
+	}
+}

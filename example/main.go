@@ -14,7 +14,7 @@ func main() {
 	mux.HandleFunc("/", hello)
 
 	fmt.Println("Listening on Port 3000")
-	log.Fatal(http.ListenAndServe(":3000", watch.WatchMw(mux, true)))
+	log.Fatal(http.ListenAndServe(":3000", watch.WatchMw(mux, watch.WithDevelopment(true), watch.WithDebugPath("/debug/boo/"))))
 }
 
 func panicDemo(w http.ResponseWriter, r *http.Request) {
