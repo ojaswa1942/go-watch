@@ -35,7 +35,7 @@ func newWatchHandler(opts []WatchHandlerOption) watchHandler {
 
 func WithDevelopment(dev bool) WatchHandlerOption {
 	return func(wh *watchHandler) {
-		wh.dev = true
+		wh.dev = dev
 	}
 }
 

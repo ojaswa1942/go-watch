@@ -9,12 +9,14 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/smtp"
 	"net/url"
 	"os"
 	"regexp"
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func WatchMw(app http.Handler, opts ...WatchHandlerOption) http.HandlerFunc {
@@ -42,14 +44,43 @@ func (wh *watchHandler) handleExceptions(w http.ResponseWriter) {
 		log.Println("----------WATCH: LOG START----------")
 		log.Printf("[WATCH] panic: %v\nFollowing is the stack trace: %s", err, stackTrace)
 		log.Println("----------WATCH: LOG END----------")
+		t := time.Now()
 
 		if !wh.dev {
 			http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+			if wh.sendEmail {
+				// Run in another go-routine to make it non-blocking
+				go issueEmail(wh.emailDetails, t.Format(time.UnixDate), err.(string), stackTrace)
+			}
 			return
 		}
 
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "<h1>panic: %v</h1><h2>Stack trace:</h2><pre>%s</pre>", err, getLinkTrace(stackTrace, wh.debugPath))
+		fmt.Fprintf(w, "<html><body><h1>panic: %v</h1><h2>Stack trace:</h2><pre>%s</pre></body></html>", err, getLinkTrace(stackTrace, wh.debugPath))
+	}
+}
+
+func issueEmail(d EmailDetails, timeError, panicError, stackTrace string) {
+
+	recipients := strings.Join(d.To, ",")
+	log.Println("[WATCH]: Issuing panic email alert to", recipients)
+
+	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+	msgBody := fmt.Sprintf("<h1>Panic Alert!</h1>This is to bring to your attention that your application has hit an unexpected panic.<br />Fortunately, you use <b><a href=\"https://github.com/ojaswa1942/go-watch\">watch</a></b>. Just kidding, here is what you need to know:<br /><h2>Timestamp:</h2>%s<h2>Error:</h2>%s<h2>Stack trace:</h2><pre style=\"background:#1c1b1b;color:#fff;padding:12px;\">%s</pre>",
+		timeError, panicError, stackTrace)
+
+	msg := []byte("From: " + d.From + "\r\n" +
+		"To: " + recipients + "\r\n" +
+		"Subject: [WATCH] Panic Alert!\r\n" +
+		mime + "\r\n" +
+		"\r\n" +
+		msgBody)
+
+	err := smtp.SendMail(d.Addr, d.A, d.From, d.To, msg)
+	if err != nil {
+		log.Print("[WATCH]: Error while issuing panic email: ", err)
+	} else {
+		log.Println("[WATCH]: Issued email alerts")
 	}
 }
 
