@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	watch "github.com/ojaswa1942/go-watch"
+	"github.com/ojaswa1942/go-watch"
 	"log"
 	"net/http"
 	"net/smtp"
