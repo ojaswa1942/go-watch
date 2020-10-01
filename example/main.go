@@ -20,7 +20,7 @@ func main() {
 	// Construct your own emailDetails
 	// fn doing the work for example
 	emailDetails := configureSMTP()
-
+	slackDetails := watch.SlackDetails{WebHookURL: "https://hooks.slack.com/services/"}
 	fmt.Println("Listening on Port 3000")
 	log.Fatal(http.ListenAndServe(":3000",
 		watch.WatchMw(
@@ -29,6 +29,7 @@ func main() {
 			watch.WithDevelopment(false),
 			watch.WithDebugPath("/debug/boo/"),
 			watch.WithEmail(emailDetails),
+			watch.WithSlack(slackDetails),
 		),
 	))
 }
