@@ -7,8 +7,9 @@ import (
 type WatchHandlerOption func(wh *watchHandler)
 
 type watchHandler struct {
-	dev, sendEmail bool
+	dev, sendEmail, sendSlack bool
 	emailDetails   EmailDetails
+	slackDetails SlackDetails
 	debugPath      string
 }
 
@@ -17,6 +18,10 @@ type EmailDetails struct {
 	A    smtp.Auth
 	From string
 	To   []string
+}
+
+type SlackDetails struct {
+	WebHookURL string
 }
 
 func newWatchHandler(opts []WatchHandlerOption) watchHandler {
@@ -43,6 +48,13 @@ func WithEmail(details EmailDetails) WatchHandlerOption {
 	return func(wh *watchHandler) {
 		wh.sendEmail = true
 		wh.emailDetails = details
+	}
+}
+
+func WithSlack(details SlackDetails) WatchHandlerOption {
+	return func(wh *watchHandler) {
+		wh.sendSlack = true
+		wh.slackDetails = details
 	}
 }
 

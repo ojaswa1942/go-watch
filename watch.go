@@ -2,10 +2,8 @@ package watch
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"github.com/alecthomas/chroma/formatters/html"
-	"github.com/alecthomas/chroma/lexers"
-	"github.com/alecthomas/chroma/styles"
 	"io"
 	"log"
 	"net/http"
@@ -17,6 +15,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/alecthomas/chroma/formatters/html"
+	"github.com/alecthomas/chroma/lexers"
+	"github.com/alecthomas/chroma/styles"
 )
 
 func WatchMw(app http.Handler, opts ...WatchHandlerOption) http.HandlerFunc {
@@ -52,6 +54,9 @@ func (wh *watchHandler) handleExceptions(w http.ResponseWriter) {
 				// Run in another go-routine to make it non-blocking
 				go issueEmail(wh.emailDetails, t.Format(time.UnixDate), err.(string), stackTrace)
 			}
+			if wh.sendSlack {
+				go issueSlack(wh.slackDetails, t.Format(time.UnixDate), err.(string), stackTrace)
+			}
 			return
 		}
 
@@ -81,6 +86,35 @@ func issueEmail(d EmailDetails, timeError, panicError, stackTrace string) {
 		log.Print("[WATCH]: Error while issuing panic email: ", err)
 	} else {
 		log.Println("[WATCH]: Issued email alerts")
+	}
+}
+
+func issueSlack(d SlackDetails, timeError, panicError, stackTrace string) {
+
+	webHook := d.WebHookURL
+	log.Println("[WATCH]: Issuing panic slack alert to ", webHook)
+
+	txt := ":bangbang: *Panic Alert!* :bangbang:\nThis is to bring to your attention that your application has hit an unexpected panic.\nFortunately, you use <https://github.com/ojaswa1942/go-watch|go-watch>. Just kidding, here is what you need to know:\n ```Timestamp: %s \nError: %s \nStack trace: %s ```"
+
+	slackBody, _ := json.Marshal(map[string]string{"text": fmt.Sprintf(txt, timeError, panicError, stackTrace)})
+
+	req, err := http.NewRequest(http.MethodPost, webHook, bytes.NewBuffer(slackBody))
+	if err != nil {
+		log.Print("[WATCH]: Error while issuing panic to slack: ", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Print("[WATCH]: Error while issuing panic slack: ", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Print("[WATCH]: Error while issuing panic slack, got response code ", resp.StatusCode)
+	} else {
+		log.Println("[WATCH]: Issued slack alerts")
 	}
 }
 
