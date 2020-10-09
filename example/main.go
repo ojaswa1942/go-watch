@@ -22,7 +22,7 @@ func main() {
 	// fn doing the work for example
 	emailDetails := configureSMTP()
 	slackDetails := watch.SlackDetails{WebHookURL: "https://hooks.slack.com/services/"}
-	discordDetails := watch.DiscordDetails{WebHookURL: "https://discordapp.com/api/webhooks/764204307687800853/XocSVXl3d8cYmooD0m8a--nxZQfIvod-yCd6N1Wk6coNQZ4jIUOgzqEoQViNS2dEEnoQ"}
+	discordDetails := watch.DiscordDetails{WebHookURL: "https://discordapp.com/api/webhooks/"}
 	fmt.Println("Listening on Port 3000")
 	log.Fatal(http.ListenAndServe(":3000",
 		watch.WatchMw(
