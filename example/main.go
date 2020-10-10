@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/ojaswa1942/go-watch"
 	"log"
 	"net/http"
 	"net/smtp"
+
+	"github.com/ojaswa1942/go-watch"
 )
 
 func main() {
@@ -21,6 +22,7 @@ func main() {
 	// fn doing the work for example
 	emailDetails := configureSMTP()
 	slackDetails := watch.SlackDetails{WebHookURL: "https://hooks.slack.com/services/"}
+	discordDetails := watch.DiscordDetails{WebHookURL: "https://discordapp.com/api/webhooks/"}
 	fmt.Println("Listening on Port 3000")
 	log.Fatal(http.ListenAndServe(":3000",
 		watch.WatchMw(
@@ -30,6 +32,7 @@ func main() {
 			watch.WithDebugPath("/debug/boo/"),
 			watch.WithEmail(emailDetails),
 			watch.WithSlack(slackDetails),
+			watch.WithDiscord(discordDetails),
 		),
 	))
 }

@@ -57,6 +57,9 @@ func (wh *watchHandler) handleExceptions(w http.ResponseWriter) {
 			if wh.sendSlack {
 				go issueSlack(wh.slackDetails, t.Format(time.UnixDate), err.(string), stackTrace)
 			}
+			if wh.sendDiscord {
+				go issueDiscord(wh.discordDetails, t.Format(time.UnixDate), err.(string), stackTrace)
+			}
 			return
 		}
 
@@ -116,6 +119,52 @@ func issueSlack(d SlackDetails, timeError, panicError, stackTrace string) {
 	} else {
 		log.Println("[WATCH]: Issued slack alerts")
 	}
+}
+
+func issueDiscord(d DiscordDetails, timeError, panicError, stackTrace string) {
+	var (
+		webHook  = d.WebHookURL
+		template = `
+		:bangbang: *Panic Alert!* :bangbang:
+		This is to bring to your attention that your application has hit an unexpected panic.
+		Fortunately, you use <https://github.com/ojaswa1942/go-watch|go-watch>. Just kidding, here is what you need to know:
+		
+		Timestamp: %s
+		Error: %s 
+		Stack trace: %s
+		`
+		err  error
+		body []byte
+		req  *http.Request
+		res  *http.Response
+	)
+
+	log.Println("[WATCH]: Issuing panic discord alert to ", webHook)
+
+	if body, err = json.Marshal(map[string]string{"content": fmt.Sprintf(template, timeError, panicError, stackTrace)}); err != nil {
+		log.Print("[WATCH]: Error while issuing panic to discord: ", err)
+		return
+	}
+
+	if req, err = http.NewRequest(http.MethodPost, webHook, bytes.NewBuffer(body)); err != nil {
+		log.Print("[WATCH]: Error while issuing panic to discord: ", err)
+		return
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	if res, err = client.Do(req); err != nil {
+		log.Print("[WATCH]: Error while issuing panic to discord: ", err)
+		return
+	}
+
+	if res.StatusCode != http.StatusOK {
+		log.Print("[WATCH]: Error while issuing panic discord, got response code ", res.StatusCode)
+		return
+	}
+
+	log.Println("[WATCH]: Issued discord alerts")
 }
 
 func sourceCodeHandler(w http.ResponseWriter, r *http.Request) {
